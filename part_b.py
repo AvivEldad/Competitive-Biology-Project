@@ -98,5 +98,9 @@ if __name__ == "__main__":
 
     ge.show_stat( seq_prectange, "Hydrophobic Amino Percent in Transmembrane sequences")
 
+    print("test")
+    print("test")
+    print("test")
+    print("test")
+    print("test")
 
-    
