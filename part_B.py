@@ -6,15 +6,14 @@ import matplotlib.pyplot as plt
 import general as ge
 
 
-
 def prepre_data(names):
     prepred = []
     nan_count = 0
     for name in names:
-        if(str(name) == 'nan'):
+        if (str(name) == 'nan'):
             nan_count += 1
-        if(str(name) != 'nan'):
-            name = str(name).replace('_','').replace(';',' ').replace('/', ' ')
+        if (str(name) != 'nan'):
+            name = str(name).replace('_', '').replace(';', ' ').replace('/', ' ')
             multi = str(name).split()
             for i in multi:
                 prepred.append(i)
@@ -52,17 +51,12 @@ def Q1():
     plot_pie_charts(len(gb_names), gb_nan, len(in_gb), "GeneBank")
 
 
-
-
-
-
-
 if __name__ == "__main__":
 
-    #Q1
+    # Q1
     # Q1()
 
-    #Q2a
+    # Q2a
 
     non_empty_df = pd.read_csv('uniprot_BS168.csv').dropna(subset=['Transmembrane'])
     start_list, end_list, len_list, gene_list, seq_list = [], [], [], [], []
@@ -80,7 +74,8 @@ if __name__ == "__main__":
             gene_list.append(name)
             seq_list.append(seq[start:end])
 
-    final_df = pd.DataFrame(zip(gene_list, start_list, end_list, len_list, seq_list), columns=['Id', 'Start', 'End', 'Length', 'Sequence'])
+    final_df = pd.DataFrame(zip(gene_list, start_list, end_list, len_list, seq_list),
+                            columns=['Id', 'Start', 'End', 'Length', 'Sequence'])
     total_len = np.asarray(final_df['Length'])
     ge.show_stat(total_len, 'Transmembrane lengths stats')
     ge.plot_hist("Transmembrane lengths", total_len, 'length', 'count', np.max(total_len) + 5, 8000)
@@ -96,7 +91,4 @@ if __name__ == "__main__":
         hydro_percent = (hydro / len(seq)) * 100
         seq_prectange.append(hydro_percent)
 
-    ge.show_stat( seq_prectange, "Hydrophobic Amino Percent in Transmembrane sequences")
-
-
-    
+    ge.show_stat(seq_prectange, "Hydrophobic Amino Percent in Transmembrane sequences")
