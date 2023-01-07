@@ -6,89 +6,182 @@ import matplotlib.pyplot as plt
 import general as ge
 
 
-def prepre_data(names):
-    prepred = []
-    nan_count = 0
-    for name in names:
-        if (str(name) == 'nan'):
-            nan_count += 1
-        if (str(name) != 'nan'):
-            name = str(name).replace('_', '').replace(';', ' ').replace('/', ' ')
-            multi = str(name).split()
-            for i in multi:
-                prepred.append(i)
-    return prepred, nan_count
+
+class part_B:
+
+    def __init__(self, genbank_path, uniport_path):
+        self.genbank_file = pd.read_csv(genbank_path)
+        self.uniprot_file = pd.read_csv(uniport_path)
+        self.trans_df = None
 
 
-def plot_pie_charts(total, nan_values, uniqe_genes, name):
-    y = np.array([total, nan_values, uniqe_genes])
-    mylabels = ["total", "non-values", "not in gb"]
 
-    plt.pie(y, labels=mylabels, explode=[0.05, 0.05, 0.2], shadow=True, autopct='%1.3f%%')
-    plt.title("{} genes".format(name))
-    plt.show()
+    def prepre_data(self,names):
+        prepred = []
+        nan_count = 0
+        for name in names:
+            if(str(name) == 'nan'):
+                nan_count += 1
+            if(str(name) != 'nan'):
+                name = str(name).replace('_','').replace(';',' ').replace('/', ' ')
+                multi = str(name).split()
+                for i in multi:
+                    prepred.append(i)
+        return prepred, nan_count
 
 
-def Q1():
-    uniprot_names = np.asarray(pd.read_csv('uniprot_BS168.csv')['Gene Names (ordered locus)'])
-    df = pd.read_csv('part_a.csv')
-    gb = df[df['type'] == 'CDS']
-    gb_names = np.asarray(gb['id'])
+    def plot_pie_charts(self,total, nan_values, uniqe_genes, name):
+        if nan_values == 0:
+            y = np.array([total, uniqe_genes])
+            mylabels = ["total", "not in {}".format(name)]
+            exp = [0.05, 0.3]
+        else:
+            y = np.array([total, nan_values, uniqe_genes])
+            mylabels = ["total", "non-values", "not in {}".format(name)]
+            exp = [0.05, 0.01, 0.3]
 
-    # prepre the data
-    un_to_compre, uni_nan = prepre_data(uniprot_names)
-    gb_to_compre, gb_nan = prepre_data(gb_names)
+        plt.pie(y, labels=mylabels, explode=exp, shadow=True, autopct='%1.2f%%')
+        plt.title("{} genes".format(name))
+        plt.show()
 
-    in_uni = list(set(un_to_compre).difference(gb_to_compre))
-    in_gb = list(set(gb_to_compre).difference(un_to_compre))
 
-    print("uniprot and not in gb:\n{}".format(in_uni))
-    print("\nmissing: {}, nan values: {}, total: {}".format(len(in_uni), uni_nan, len(uniprot_names)))
-    print("gb and not in uniprot:\n{}".format(in_gb))
-    print("\nmissing: {}, nan values: {}, total: {}".format(len(in_gb), gb_nan, len(gb_names)))
+    def compare_uni_and_gb(self):
+        uniprot_names = np.asarray(self.uniprot_file['Gene Names (ordered locus)'])
+        gb = self.genbank_file[self.genbank_file['type'] == 'CDS']
+        gb_names = np.asarray(gb['id'])
 
-    plot_pie_charts(len(uniprot_names), uni_nan, len(in_uni), "Uniprot")
-    plot_pie_charts(len(gb_names), gb_nan, len(in_gb), "GeneBank")
+        # prepre the data
+        un_to_compre, uni_nan = self.prepre_data(uniprot_names)
+        gb_to_compre, gb_nan = self.prepre_data(gb_names)
+
+        in_uni = list(set(un_to_compre).difference(gb_to_compre))
+        in_gb = list(set(gb_to_compre).difference(un_to_compre))
+
+        print("uniprot and not in gb:\n{}".format(in_uni))
+        print("\nmissing: {}, nan values: {}, total: {}".format(len(in_uni), uni_nan, len(uniprot_names)))
+        print("gb and not in uniprot:\n{}".format(in_gb))
+        print("\nmissing: {}, nan values: {}, total: {}".format(len(in_gb), gb_nan, len(gb_names)))
+
+        self.plot_pie_charts(len(uniprot_names), uni_nan, len(in_uni), "Uniprot")
+        self.plot_pie_charts(len(gb_names), gb_nan, len(in_gb), "GeneBank")
+
+
+    def trans_operations(self):
+        non_empty_df = self.uniprot_file.dropna(subset=['Transmembrane'])
+        start_list, end_list, len_list, gene_list, seq_list = [], [], [], [], []
+        for index, row in non_empty_df.iterrows():
+            name = row['Gene Names (ordered locus)']
+            seq = row['Sequence']
+            trans = row['Transmembrane'].replace('TRANSMEM ', '').replace(' ', '').split(';')
+            trans = [t for t in trans if '\"' not in t]
+            for i in trans:
+                splitter = i.split('..')
+                start, end = int(splitter[0]), int(splitter[1])
+                start_list.append(start)
+                end_list.append(end)
+                len_list.append(np.abs(end - start))
+                gene_list.append(name)
+                seq_list.append(seq[start:end])
+
+        self.trans_df = pd.DataFrame(zip(gene_list, start_list, end_list, len_list, seq_list), columns=['Id', 'Start', 'End', 'Length', 'Sequence'])
+        total_len = np.asarray(self.trans_df['Length'])
+        ge.show_stat(total_len, 'Transmembrane lengths stats')
+        ge.plot_hist("Transmembrane lengths", total_len, 'length', 'count', np.max(total_len) + 5, 8000)
+        plt.show()
+
+    def hydro_operations(self):
+        hydro_amino = ['A', 'F', 'L', 'I', 'V', 'M', 'P', 'W']
+        sequences = self.trans_df['Sequence']
+        seq_percent = []
+        for seq in sequences:
+            hydro = sum([1 for c in seq if c in hydro_amino])
+            hydro_percent = (hydro / len(seq)) * 100
+            seq_percent.append(hydro_percent)
+
+        ge.show_stat( seq_percent, "Hydrophobic Amino Percent in Transmembrane sequences")
+        ge.plot_hist("Hydrofobic amino acids", seq_percent, 'percent', 'count', 200, 4000)
+        plt.show()
 
 
 if __name__ == "__main__":
 
-    # Q1
-    # Q1()
+    gb_and_uni = part_B('Data/part_a.csv','Data/uniprot_BS168.csv')
 
-    # Q2a
+    #Q1
+    # gb_and_uni.compare_uni_and_gb()
 
-    non_empty_df = pd.read_csv('uniprot_BS168.csv').dropna(subset=['Transmembrane'])
-    start_list, end_list, len_list, gene_list, seq_list = [], [], [], [], []
-    for index, row in non_empty_df.iterrows():
-        name = row['Gene Names (ordered locus)']
-        seq = row['Sequence']
-        trans = row['Transmembrane'].replace('TRANSMEM ', '').replace(' ', '').split(';')
-        trans = [t for t in trans if '\"' not in t]
-        for i in trans:
-            splitter = i.split('..')
-            start, end = int(splitter[0]), int(splitter[1])
-            start_list.append(start)
-            end_list.append(end)
-            len_list.append(np.abs(end - start))
-            gene_list.append(name)
-            seq_list.append(seq[start:end])
+    #Q2a
 
-    final_df = pd.DataFrame(zip(gene_list, start_list, end_list, len_list, seq_list),
-                            columns=['Id', 'Start', 'End', 'Length', 'Sequence'])
-    total_len = np.asarray(final_df['Length'])
-    ge.show_stat(total_len, 'Transmembrane lengths stats')
-    ge.plot_hist("Transmembrane lengths", total_len, 'length', 'count', np.max(total_len) + 5, 8000)
-    plt.show()
+    gb_and_uni.trans_operations()
 
     # Q2b
 
-    HYDROPHOBIC_AMINO = ['A', 'F', 'L', 'I', 'V', 'M', 'P', 'W']
-    sequences = final_df['Sequence']
-    seq_prectange = []
-    for seq in sequences:
-        hydro = sum([1 for c in seq if c in HYDROPHOBIC_AMINO])
-        hydro_percent = (hydro / len(seq)) * 100
-        seq_prectange.append(hydro_percent)
+    gb_and_uni.hydro_operations()
 
-    ge.show_stat(seq_prectange, "Hydrophobic Amino Percent in Transmembrane sequences")
+    #
+    # #Q3
+    #
+    # trans_names = np.asarray(trans_df['Id'])
+    # df = pd.read_csv('data/part_a.csv')
+    # gb = df[df['type'] == 'CDS']
+    # gb_names = np.asarray(gb['id'])
+    #
+    # un_to_compre, uni_nan = prepre_data(trans_names)
+    # gb_to_compre, gb_nan = prepre_data(gb_names)
+    #
+    # mask = np.array([(id in un_to_compre) for id in gb_to_compre])
+    #
+    # intersection =  gb_names[mask]
+    # not_intersection = gb_names[~mask]
+    # intersection_seq_percent = [] #B team
+    # for name in intersection:
+    #     seq = gb.loc[gb['id'] == name, 'sub sequence'].iloc[0]
+    #     intersection_seq_percent.append(ge.calc_percentage_in_genes(seq, 'AT'))
+    # # ge.plot_hist("GC percent in intersection", intersection_seq_percent, 'percent', 'count', 100 , 500)
+    # # plt.show()
+    #
+    # non_intersection_seq_percent = []  # B team
+    # for name in not_intersection:
+    #     seq = gb.loc[gb['id'] == name, 'sub sequence'].iloc[0]
+    #     non_intersection_seq_percent.append(ge.calc_percentage_in_genes(seq, 'AT'))
+    #
+    #
+    #
+    #
+    # at_precent_gb = np.asarray(gb['AT percent']) #A team
+    #
+    # ge.show_stat(at_precent_gb, "GenBank AT precents")
+    # ge.show_stat(intersection_seq_percent, "GenBank with Transmembrane intersection AT precents")
+    # ge.show_stat(non_intersection_seq_percent, "GenBank without Transmembrane intersection AT precents")
+    #
+    # x_title = "AT percent"
+    # y_title = "numbers"
+    # x_max = 100
+    # y_max = 1500
+    # plt.figure(figsize=(15, 6))
+    #
+    # plt.subplot(1, 4, 1)
+    # ge.plot_hist("GenBank AT precents", at_precent_gb, x_title, y_title, x_max, y_max)
+    #
+    # plt.subplot(1, 4, 2)
+    # ge.plot_hist("GenBank with Transmembrane intersection",
+    #           intersection_seq_percent, x_title,y_title, x_max, y_max)
+    #
+    # plt.subplot(1, 4, 3)
+    # ge.plot_hist("GenBank without Transmembrane intersection",
+    #           non_intersection_seq_percent, x_title,y_title, x_max, y_max)
+    #
+    # plt.subplot(1, 4, 4)
+    # ge.plot_hist("with and witout intersection",
+    #           [intersection_seq_percent, non_intersection_seq_percent], x_title, y_title, x_max, y_max)
+    #
+    # plt.suptitle("GC Percent")
+    # plt.tight_layout()
+    # plt.show()
+    #
+
+
+
+
+
+
