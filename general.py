@@ -10,8 +10,9 @@ from Bio.Data.CodonTable import TranslationError
 DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Data')
 
 DNA = ['A', 'C', 'T', 'G']
+HYDRO_AMINO = ['A', 'F', 'L', 'I', 'V', 'M', 'P', 'W']
 
-TRANS_TABLE_11 = {
+TRANS_TABLE_1 = {
     'ATA': 'I', 'ATC': 'I', 'ATT': 'I', 'ATG': 'M',
     'ACA': 'T', 'ACC': 'T', 'ACG': 'T', 'ACT': 'T',
     'AAC': 'N', 'AAT': 'N', 'AAA': 'K', 'AAG': 'K',
@@ -26,8 +27,8 @@ TRANS_TABLE_11 = {
     'GGA': 'G', 'GGC': 'G', 'GGG': 'G', 'GGT': 'G',
     'TCA': 'S', 'TCC': 'S', 'TCG': 'S', 'TCT': 'S',
     'TTC': 'F', 'TTT': 'F', 'TTA': 'L', 'TTG': 'L',
-    'TAC': 'Y', 'TAT': 'Y', 'TAA': '*', 'TAG': '*',
-    'TGC': 'C', 'TGT': 'C', 'TGA': '*', 'TGG': 'W'
+    'TAC': 'Y', 'TAT': 'Y', 'TAA': '_', 'TAG': '_',
+    'TGC': 'C', 'TGT': 'C', 'TGA': '_', 'TGG': 'W',
 }
 
 
@@ -116,9 +117,9 @@ def show_stat(arr, title):
                                        f"Standard deviation: {std:.2f}\n")
 
 
-def plot_hist(title, arr, x_label, y_label, x_max, y_max):
+def plot_hist(title, arr, x_label, y_label, x_max, y_max, color='purple'):
     plt.title(title)
-    plt.hist(arr, color='purple')
+    plt.hist(arr, color=color)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.xlim([0, x_max])

@@ -1,5 +1,3 @@
-from Bio import SeqIO
-from os import path
 from general import *
 
 BS_PATH = os.path.join(DATA_PATH, 'BS168.gb')
