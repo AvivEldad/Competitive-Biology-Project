@@ -99,8 +99,8 @@ class GenBank:
         # high.to_csv(os.path.join(DATA_PATH, 'high_AT_percent.csv'))
         # low.to_csv(os.path.join(DATA_PATH, 'low_AT_percent.csv'))
         print('\033[93m' + "\nExtreme AT percents genes:" + '\033[0m')
-        print(f"Top {n} AT percents genes details:\n{high.to_string()}")
-        print(f"\nBottom {n} AT percents genes details:\n{low.to_string()}")
+        print(f"Top {n} AT percents genes details:\n{high}")
+        print(f"\nBottom {n} AT percents genes details:\n{low}")
 
     # Q4
     def show_cell_wall_stat(self):
@@ -132,7 +132,7 @@ class GenBank:
         check_df = self.df.dropna(subset=['check'])
         err_df = check_df[check_df['check'] != 'OK']
 
-        print(f'Genes with conflict in translations:\n{err_df.to_string()}')
+        print(f'Genes with conflict in translations:\n{err_df}')
         err_df.to_csv(results_path)
 
 
