@@ -5,6 +5,7 @@ import os
 import general as ge
 
 PART_A_CSV_PATH = os.path.join(ge.DATA_PATH, "part_a.csv")
+UNIPROT_PATH = os.path.join(ge.DATA_PATH, "uniprot_BS168.csv")
 
 
 class Uniprot:
@@ -30,11 +31,11 @@ class Uniprot:
     def plot_pie_charts(self, total, nan_values, unique_genes, name):
         if nan_values == 0:
             y = np.array([total, unique_genes])
-            my_labels = ["total", "not in {}".format(name)]
+            my_labels = ["total", "not in {}".format('Uniprot' if name == 'GeneBank' else 'GeneBank')]
             exp = [0.05, 0.3]
         else:
             y = np.array([total, nan_values, unique_genes])
-            my_labels = ["total", "non-values", "not in {}".format(name)]
+            my_labels = ["total", "non-values", "not in {}".format('Uniprot' if name == 'GeneBank' else 'GeneBank')]
             exp = [0.05, 0.01, 0.3]
 
         plt.pie(y, labels=my_labels, explode=exp, shadow=True, autopct='%1.2f%%')
@@ -97,12 +98,71 @@ class Uniprot:
         ge.plot_hist("Hydrofobic amino acids", seq_percent, 'percent', 'count', 200, 4000)
         plt.show()
 
+    def plot_subs_hist(self, at_percent_gb, intersection_seq_percent, complement_seq_percent):
+        x_title = "AT percent"
+        y_title = "numbers"
+        x_max = 100
+        y_max = 1500
+        plt.figure(figsize=(15, 6))
+
+        plt.subplot(1, 4, 1)
+        ge.plot_hist("GB percent", at_percent_gb, x_title, y_title, x_max, y_max)
+
+        plt.subplot(1, 4, 2)
+        ge.plot_hist("GB with Trans",
+                     intersection_seq_percent, x_title, y_title, x_max, y_max)
+
+        plt.subplot(1, 4, 3)
+        ge.plot_hist("GB without Trans",
+                     complement_seq_percent, x_title, y_title, x_max, y_max)
+
+        plt.subplot(1, 4, 4)
+        ge.plot_hist("GB with/out trans", complement_seq_percent, x_title, y_title, x_max, y_max,
+                     color='black')
+        ge.plot_hist("GB with/out trans", intersection_seq_percent, x_title, y_title, x_max, y_max)
+
+        plt.suptitle("AT Percent")
+        plt.tight_layout()
+        plt.show()
+
+    def AT_distribution(self):
+        trans_names = np.asarray(self.trans_df['Id'])
+        gb = self.genbank_file[self.genbank_file['type'] == 'CDS']
+        gb_names = np.asarray(gb['id'])
+
+        un_to_compare, uni_nan = gb_and_uni.prepre_data(trans_names)
+        gb_to_compare, gb_nan = gb_and_uni.prepre_data(gb_names)
+
+        at_percent_gb = np.asarray(gb['AT percent'])  # A team
+
+        mask = np.array([(id in un_to_compare) for id in gb_to_compare])
+
+        intersection = gb_names[mask]
+        complement = gb_names[~mask]
+        intersection_seq_percent = []  # B team
+        for name in intersection:
+            seq = gb.loc[gb['id'] == name, 'sub sequence'].iloc[0]
+            intersection_seq_percent.append(ge.calc_percentage_in_genes(seq, 'AT'))
+        ge.plot_hist("GC percent in intersection", intersection_seq_percent, 'percent', 'count', 100, 500)
+        plt.show()
+
+        complement_seq_percent = []
+        for name in complement:
+            seq = gb.loc[gb['id'] == name, 'sub sequence'].iloc[0]
+            complement_seq_percent.append(ge.calc_percentage_in_genes(seq, 'AT'))
+
+        ge.show_stat(at_percent_gb, "GenBank AT percent")
+        ge.show_stat(intersection_seq_percent, "GenBank with Transmembrane intersection AT percents")
+        ge.show_stat(complement_seq_percent, "GenBank without Transmembrane intersection AT percents")
+
+        self.plot_subs_hist(at_percent_gb, intersection_seq_percent, complement_seq_percent)
+
 
 if __name__ == "__main__":
-    gb_and_uni = Uniprot(PART_A_CSV_PATH, 'Data/uniprot_BS168.csv')
+    gb_and_uni = Uniprot(PART_A_CSV_PATH, UNIPROT_PATH)
 
     # Q1
-    # gb_and_uni.compare_uni_and_gb()
+    gb_and_uni.compare_uni_and_gb()
 
     # Q2a
 
@@ -112,61 +172,5 @@ if __name__ == "__main__":
 
     gb_and_uni.hydro_operations()
 
-    #
     # Q3
-
-    trans_names = np.asarray(gb_and_uni.trans_df['Id'])
-    df = pd.read_csv('data/part_a.csv')
-    gb = df[df['type'] == 'CDS']
-    gb_names = np.asarray(gb['id'])
-
-    un_to_compare, uni_nan = gb_and_uni.prepre_data(trans_names)
-    gb_to_compare, gb_nan = gb_and_uni.prepre_data(gb_names)
-
-    at_percent_gb = np.asarray(gb['AT percent'])  # A team
-
-    mask = np.array([(id in un_to_compare) for id in gb_to_compare])
-
-    intersection = gb_names[mask]
-    not_intersection = gb_names[~mask]
-    intersection_seq_percent = []  # B team
-    for name in intersection:
-        seq = gb.loc[gb['id'] == name, 'sub sequence'].iloc[0]
-        intersection_seq_percent.append(ge.calc_percentage_in_genes(seq, 'AT'))
-    ge.plot_hist("GC percent in intersection", intersection_seq_percent, 'percent', 'count', 100, 500)
-    plt.show()
-
-    non_intersection_seq_percent = []
-    for name in not_intersection:
-        seq = gb.loc[gb['id'] == name, 'sub sequence'].iloc[0]
-        non_intersection_seq_percent.append(ge.calc_percentage_in_genes(seq, 'AT'))
-
-    ge.show_stat(at_percent_gb, "GenBank AT percent")
-    ge.show_stat(intersection_seq_percent, "GenBank with Transmembrane intersection AT percents")
-    ge.show_stat(non_intersection_seq_percent, "GenBank without Transmembrane intersection AT percents")
-
-    x_title = "AT percent"
-    y_title = "numbers"
-    x_max = 100
-    y_max = 1500
-    plt.figure(figsize=(15, 6))
-
-    plt.subplot(1, 4, 1)
-    ge.plot_hist("GenBank AT percent", at_percent_gb, x_title, y_title, x_max, y_max)
-
-    plt.subplot(1, 4, 2)
-    ge.plot_hist("GenBank with Transmembrane intersection",
-                 intersection_seq_percent, x_title, y_title, x_max, y_max)
-
-    plt.subplot(1, 4, 3)
-    ge.plot_hist("GenBank without Transmembrane intersection",
-                 non_intersection_seq_percent, x_title, y_title, x_max, y_max)
-
-    plt.subplot(1, 4, 4)
-    ge.plot_hist("with and without intersection", intersection_seq_percent, x_title, y_title, x_max, y_max)
-    ge.plot_hist("with and without intersection", non_intersection_seq_percent, x_title, y_title, x_max, y_max,
-                 color='orange')
-
-    plt.suptitle("GC Percent")
-    plt.tight_layout()
-    plt.show()
+    gb_and_uni.AT_distribution()
