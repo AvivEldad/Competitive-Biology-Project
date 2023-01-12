@@ -32,6 +32,25 @@ TRANS_TABLE_1 = {
 }
 
 
+def check_translation(gene_type, org_trans, seq, trans_table, strand, codon_start):
+    if gene_type != "CDS":
+        return None
+
+    codon_start = int(codon_start)
+    org_seq = Seq(seq[(codon_start - 1):])
+    if strand != 1:
+        org_seq = org_seq.reverse_complement()
+
+    try:
+        trans = str(org_seq.translate(table=trans_table, cds=True))
+        check = (trans == org_trans)
+        if check:
+            return "OK"
+
+    except TranslationError as err:
+        return str(err)
+
+
 def parse_genbank(gb_path):
     assert (path.exists(gb_path))
     with open(gb_path, 'r') as input_handle:
@@ -92,6 +111,10 @@ def create_dataframe_from_gb(gb_path, id_header='locus_tag'):
                                'cell wall'])
 
     sequence = record_gb.seq.upper()  # full genome
+    df['sub sequence'] = df.apply(lambda row: sequence[row['start']:row['end']], axis=1)
+    df['check'] = df.apply(
+        lambda row: check_translation(row['type'], row['translation'], row['sub sequence'], row['table'], row['strand'],
+                                      row['codon_start']), axis=1)
 
     return df, sequence, gene_names
 
@@ -133,22 +156,3 @@ def calc_percentage_in_genes(seq, letters):
         counts[letter] = count
 
     return (sum(counts.values()) / len(seq)) * 100
-
-
-def check_translation(gene_type, org_trans, seq, trans_table, strand, codon_start):
-    if gene_type != "CDS":
-        return None
-
-    codon_start = int(codon_start)
-    org_seq = Seq(seq[(codon_start - 1):])
-    if strand != 1:
-        org_seq = org_seq.reverse_complement()
-
-    try:
-        trans = str(org_seq.translate(table=trans_table, cds=True))
-        check = (trans == org_trans)
-        if check:
-            return "OK"
-
-    except TranslationError as err:
-        return str(err)

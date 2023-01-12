@@ -75,7 +75,6 @@ class GenBank:
 
     # Q3.c
     def show_cds_AT_average_percent(self):
-        gb.add_sub_sequence_col()
         gb.add_at_percent_col()
         cds_at_percent = self.cds['AT percent']
         at_average = cds_at_percent.mean()
@@ -124,9 +123,6 @@ class GenBank:
 
     # Q5
     def report_conflicts(self, results_path):
-        self.df['check'] = self.df.apply(
-            lambda row: check_translation(row['type'], row['translation'], row['sub sequence'], row['table'],
-                                          row['strand'], row['codon_start']), axis=1)
         check_df = self.df.dropna(subset=['check'])
         err_df = check_df[check_df['check'] != 'OK']
 
