@@ -143,7 +143,7 @@ class Uniprot:
         for name in intersection:
             seq = gb.loc[gb['id'] == name, 'sub sequence'].iloc[0]
             intersection_seq_percent.append(ge.calc_percentage_in_genes(seq, 'AT'))
-        ge.plot_hist("GC percent in intersection", intersection_seq_percent, 'percent', 'count', 100, 500)
+        ge.plot_hist("AT percent in intersection", intersection_seq_percent, 'percent', 'count', 100, 500)
         plt.show()
 
         complement_seq_percent = []
