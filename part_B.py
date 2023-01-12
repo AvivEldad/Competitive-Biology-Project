@@ -8,7 +8,7 @@ PART_A_CSV_PATH = os.path.join(ge.DATA_PATH, "part_a.csv")
 UNIPROT_PATH = os.path.join(ge.DATA_PATH, "uniprot_BS168.csv")
 
 
-class Uniprot:
+class UniProt:
 
     def __init__(self, genbank_path, uniport_path):
         self.genbank_file = pd.read_csv(genbank_path)
@@ -54,10 +54,10 @@ class Uniprot:
         in_uni = list(set(uni_to_compare).difference(gb_to_compare))
         in_gb = list(set(gb_to_compare).difference(uni_to_compare))
 
-        print("uniprot and not in gb:\n{}".format(in_uni))
-        print("\nmissing: {}, nan values: {}, total: {}".format(len(in_uni), uni_nan, len(uniprot_names)))
-        print("gb and not in uniprot:\n{}".format(in_gb))
-        print("\nmissing: {}, nan values: {}, total: {}".format(len(in_gb), gb_nan, len(gb_names)))
+        print('\033[93m' + "UniProt and not in GenBank:" + '\033[0m' + "\n{}".format(in_uni))
+        print("missing: {}, nan values: {}, total: {}".format(len(in_uni), uni_nan, len(uniprot_names)))
+        print('\033[93m' + "\nGenBank and not in UniProt:" + '\033[0m' + "\n{}".format(in_gb))
+        print("missing: {}, nan values: {}, total: {}".format(len(in_gb), gb_nan, len(gb_names)))
 
         self.plot_pie_charts(len(uniprot_names), uni_nan, len(in_uni), "Uniprot")
         self.plot_pie_charts(len(gb_names), gb_nan, len(in_gb), "GeneBank")
@@ -159,18 +159,14 @@ class Uniprot:
 
 
 if __name__ == "__main__":
-    gb_and_uni = Uniprot(PART_A_CSV_PATH, UNIPROT_PATH)
+    gb_and_uni = UniProt(PART_A_CSV_PATH, UNIPROT_PATH)
 
-    # Q1
+    print('\033[92m' + '--- PartB | Q1 ---' + '\033[0m')
     gb_and_uni.compare_uni_and_gb()
 
-    # Q2a
+    print('\033[92m' + '\n--- PartB | Q2 ---' + '\033[0m')
+    gb_and_uni.trans_operations()  # a
+    gb_and_uni.hydro_operations()  # b
 
-    gb_and_uni.trans_operations()
-
-    # Q2b
-
-    gb_and_uni.hydro_operations()
-
-    # Q3
+    print('\033[92m' + '\n--- PartB | Q3 ---' + '\033[0m')
     gb_and_uni.AT_distribution()
