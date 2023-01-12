@@ -106,20 +106,20 @@ class UniProt:
         plt.figure(figsize=(15, 6))
 
         plt.subplot(1, 4, 1)
-        ge.plot_hist("GB percent", at_percent_gb, x_title, y_title, x_max, y_max)
+        ge.plot_hist("GenBank (A)", at_percent_gb, x_title, y_title, x_max, y_max)
 
         plt.subplot(1, 4, 2)
-        ge.plot_hist("GB with Trans",
+        ge.plot_hist("GenBank with Trans (B)",
                      intersection_seq_percent, x_title, y_title, x_max, y_max)
 
         plt.subplot(1, 4, 3)
-        ge.plot_hist("GB without Trans",
+        ge.plot_hist("GenBank without Trans (A/B)",
                      complement_seq_percent, x_title, y_title, x_max, y_max)
 
         plt.subplot(1, 4, 4)
-        ge.plot_hist("GB with/out trans", complement_seq_percent, x_title, y_title, x_max, y_max,
+        ge.plot_hist("GenBank with/out trans", complement_seq_percent, x_title, y_title, x_max, y_max,
                      color='black')
-        ge.plot_hist("GB with/out trans", intersection_seq_percent, x_title, y_title, x_max, y_max)
+        ge.plot_hist("GenBank with/out trans", intersection_seq_percent, x_title, y_title, x_max, y_max)
 
         plt.suptitle("AT Percent")
         plt.tight_layout()
