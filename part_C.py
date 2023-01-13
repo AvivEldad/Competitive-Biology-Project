@@ -186,7 +186,6 @@ class Virus_Analyzer:
 
 if __name__ == "__main__":
 
-    # "Data\BS168.gb"
     # Q2:
     covid_2021 = 'Data\MZ383039.1.gb'  # corona virus from 2021
     covid_2022 = 'Data\OQ065689.1.gb'  # corona virus from 2022
