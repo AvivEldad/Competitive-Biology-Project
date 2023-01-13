@@ -62,7 +62,7 @@ def parse_genbank(gb_path):
 
 def create_dataframe_from_gb(gb_path, id_header='locus_tag'):
     record_gb = parse_genbank(gb_path)
-    genes_id, start, end, feat_types, strand, cell_wall = [], [], [], [], [], []
+    genes_id, start, end, feat_types, strand, cell_wall, products, proteins_id, gene_seqs = [], [], [], [], [], [],[],[],[]
     tables, translations, codon_starts = [], [], []  # only for cds
     gene_names = []
     features = record_gb.features[1:]
@@ -90,6 +90,16 @@ def create_dataframe_from_gb(gb_path, id_header='locus_tag'):
             if 'product' in feature.qualifiers.keys():
                 if 'cell wall' in feature.qualifiers['product'][0]:
                     cw = 'Yes'
+                product = feature.qualifiers['product'][0]
+            else:
+                product = None
+
+            if 'protein_id' in feature.qualifiers.keys():
+                protein_id = feature.qualifiers['protein_id'][0]
+            else:
+                protein_id = None
+
+            gene_seq = feature.extract(record_gb.seq)
 
         else:
             table = None
@@ -105,10 +115,13 @@ def create_dataframe_from_gb(gb_path, id_header='locus_tag'):
         tables.append(table)
         translations.append(translation)
         codon_starts.append(codon_start)
+        products.append(product)
+        proteins_id.append(protein_id)
+        gene_seqs.append(gene_seq)
 
-    df = pd.DataFrame(zip(genes_id, start, end, strand, feat_types, tables, translations, codon_starts, cell_wall),
+    df = pd.DataFrame(zip(genes_id, start, end, strand, feat_types, tables, translations, codon_starts, cell_wall, products, proteins_id, gene_seqs),
                       columns=['id', 'start', 'end', 'strand', 'type', 'table', 'translation', 'codon_start',
-                               'cell wall'])
+                               'cell wall' ,'product', 'protein id', 'gene_seq'])
 
     sequence = record_gb.seq.upper()  # full genome
     df['sub sequence'] = df.apply(lambda row: sequence[row['start']:row['end']], axis=1)
