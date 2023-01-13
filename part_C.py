@@ -74,9 +74,9 @@ class Virus_Analyzer:
         formate_massage = 'the values that only in {} and not in {} are - {}\n'
 
         self.common_genes_list = list(
-            set(self.cds_1['id']) & set(self.cds_2['id']))
-        def1 = list(set(self.cds_1['id'])-set(self.cds_2['id']))
-        def2 = list(set(self.cds_2['id'])-set(self.cds_1['id']))
+            set(self.df_1['id']) & set(self.df_2['id']))
+        def1 = list(set(self.df_1['id'])-set(self.df_2['id']))
+        def2 = list(set(self.df_1['id'])-set(self.df_2['id']))
 
         print('There are {} common values between the files.\n the values are: {}\n'.format(
             len(self.common_genes_list), self.common_genes_list))
