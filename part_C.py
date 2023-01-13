@@ -1,18 +1,31 @@
-from Bio import SeqIO
+from Bio import Align
 from Bio.Seq import Seq
+from Bio.codonalign.codonseq import CodonSeq, cal_dn_ds
+from Bio.Align import substitution_matrices
 import os
 import general as ge
-from Bio.codonalign.codonseq import CodonSeq, cal_dn_ds
-from Bio import Entrez, SeqIO, Align
-from Bio.Align import substitution_matrices
-import numpy as np
 from tabulate import tabulate
 import re
 
-
 class Virus_Analyzer:
 
+    def __init__(self, file1, file2):
+
+        assert (os.path.exists(file1))  # making sure that the path is valid
+        assert (os.path.exists(file2))  # making sure that the path is valid
+
+        self.df_1, sequences, self.gene_names_1 = ge.create_dataframe_from_gb(
+            file1, 'gene')
+        self.cds_1, self.other_1 = ge.cds_other(self.df_1)
+        self.file_id_1 = os.path.basename(file1)[:-3]
+
+        self.df_2, sequences, self.gene_names_2 = ge.create_dataframe_from_gb(
+            file2, 'gene')
+        self.cds_2, self.other_2 = ge.cds_other(self.df_2)
+        self.file_id_2 = os.path.basename(file2)[:-3]
+
     # Q1
+
     def calc_synonymous(self):
 
         # Create a dictionary of codons and their synonymous positions
@@ -41,184 +54,113 @@ class Virus_Analyzer:
         print(synonymous_positions)
 
     # Q2_a
-    def compare_gb_files(self, files):
-        assert (os.path.exists(files[0]))  # making sure that the path is valid
-        assert (os.path.exists(files[1]))  # making sure that the path is valid
-        self.gene_lists = {}
+    def compare_gb_files(self):
 
-        for file in files:
-            self.cur_file = file
-            file_name = os.path.basename(file)
-            gene_lst = self.count_genes(file)
-            num_proteins = self.count_proteins(file)
+        all_gene_len_1 = len(self.cds_1) + \
+            len(self.other_1) + len(self.gene_names_1)
+        all_gene_len_2 = len(self.cds_2) + \
+            len(self.other_2) + len(self.gene_names_2)
 
-            print('{}\n=============\nGenes Number: {}\nProteins Number: {}\n'.format(
-                file_name, len(gene_lst), num_proteins))
-            self.gene_lists[file_name] = gene_lst
-
-    def count_genes(self, file):
-        gene_list = []
-        for record in SeqIO.parse(file, "genbank"):
-            for feature in record.features:
-                gene = feature.qualifiers.get("gene", None)
-                if gene:
-                    gene_list.append(gene[0])
-
-        return gene_list
-
-    def count_proteins(self, file):
-        num_cds = 0
-        for record in SeqIO.parse(file, "genbank"):
-            for feature in record.features:
-                protein_id = feature.qualifiers.get("protein_id", None)
-                if protein_id:
-                    num_cds = num_cds + 1
-
-        return num_cds
+        format_massage = '{}\n=============\nGenes Number: {}\nProteins Number: {}\n'
+        print(format_massage.format(self.file_id_1,
+              all_gene_len_1, len(self.cds_1)))
+        print(format_massage.format(self.file_id_2,
+              all_gene_len_2, len(self.cds_2)))
 
     # Q2_b
+
     def compare_genes(self):
 
         formate_massage = 'the values that only in {} and not in {} are - {}\n'
-        for i in range(0, len(self.gene_lists)-1):
 
-            list1 = list(self.gene_lists.values())[i]
-            list2 = list(self.gene_lists.values())[i+1]
-            file_name1 = list(self.gene_lists)[i]
-            file_name2 = list(self.gene_lists)[i+1]
-
-            common_genes_lst = list(set(list1) & (set(list2)))
-            res = list(set(list1) - set(list2))
-            if len(res) != 0:
-                print(formate_massage.format(file_name1, file_name2, res))
-
-            res = list(set(list2) - set(list1))
-            if len(res) != 0:
-                print(formate_massage.format(file_name2, file_name1, res))
+        self.common_genes_list = list(
+            set(self.cds_1['id']) & set(self.cds_2['id']))
+        def1 = list(set(self.cds_1['id'])-set(self.cds_2['id']))
+        def2 = list(set(self.cds_2['id'])-set(self.cds_1['id']))
 
         print('There are {} common values between the files.\n the values are: {}\n'.format(
-            len(common_genes_lst), common_genes_lst))
-        self.common_genes_lst = common_genes_lst
+            len(self.common_genes_list), self.common_genes_list))
+
+        formate_massage = 'the values that only in {} and not in {} are - {}\n'
+        print(formate_massage.format(self.file_id_1, self.file_id_2, def1))
+        print(formate_massage.format(self.file_id_2, self.file_id_1, def2))
 
     # Q3_c
-
-    def common_genes_analysis(self, file1, file2):
+    def common_genes_analysis(self):
 
         gene_lst = []
         table = []
-        for gene in self.common_genes_lst:
 
-            seq1, translation_table1, role1, id1 = self.get_sequence(gene, file1)
-            seq2, translation_table2, role2, id2 = self.get_sequence(gene, file2)
+        for gene in self.common_genes_list:
 
-            if seq1 != None and seq2 != None:
-                # the gene must be coded to protein, if not- the seq will be none
-                gene_lst.append(gene)
-                aligned_seq1, aligned_seq2 = self.trans_and_align(seq1, seq2,
-                                                                  translation_table1, translation_table2)
+            sub_seq1 = self.cds_1.loc[self.cds_1['id']
+                                      == gene, 'gene_seq'].iloc[0]
+            sub_seq2 = self.cds_2.loc[self.cds_2['id']
+                                      == gene, 'gene_seq'].iloc[0]
 
+            if self.validate_Seq(sub_seq1) == None or self.validate_Seq(sub_seq2) == None:
+                continue
 
-                dN, dS = cal_dn_ds(CodonSeq(aligned_seq1), CodonSeq(aligned_seq2))
+            gene_lst.append(gene)
 
-                if dS == 0: # there are no synonimus codons
-                    dN_dS = 0
-                else:
-                    dN_dS = dN / dS
-                
-                dN_dS = float("%0.3f" % dN_dS) #round
+            t1 = self.cds_1.loc[self.cds_1['id']
+                                == gene, 'table'].iloc[0]
+            t2 = self.cds_2.loc[self.cds_2['id']
+                                == gene, 'table'].iloc[0]
+
+            pro_id = self.cds_1.loc[self.cds_1['id']
+                                    == gene, 'protein id'].iloc[0]
+            role = self.cds_1.loc[self.cds_1['id']
+                                  == gene, 'product'].iloc[0]
+
+            aligned_seq1, aligned_seq2 = self.trans_and_align(
+                sub_seq1, sub_seq2, t1, t2)
+
+            dN, dS = cal_dn_ds(CodonSeq(aligned_seq1), CodonSeq(aligned_seq2))
+
+            if dN == 0 and dS == 0:  # no mutations at all
+                dN_dS = 0
+                selection = "negative"
+
+            elif dS == 0:  # there are no synonimus mutations
+                dN_dS = None
+                selection = "positive"
+
+            else:
+                dN_dS = dN / dS
+
+                dN_dS = float("%0.3f" % dN_dS)  # round
                 selection = ""
-                if dN_dS == 1 :  
+                if 0.95 <= dN_dS <= 1.05:
                     selection = "neutral"
-                elif dN_dS < 1:
-                    selection = "negative"
-                else:
+                elif dN_dS > 1.05:
                     selection = "positive"
+                else:
+                    selection = "negative"
 
-                #build table:
-                table.append([gene, id1, role1, dN_dS, selection])
-          
+            # build table:
+            table.append([gene, pro_id, role, dN, dS, dN_dS, selection])
 
             # choose only 5
             if len(gene_lst) == 5:
                 break
-           
-        #define header names
-        col_names = ["Gene name", "Id", "Product", "dN/dS", "Selection Type"] 
-        #display table
+
+        # define header names
+        col_names = ["Gene name", "Id", "Product",
+                     "dN", "dS", "dN/dS", "Selection Type"]
+        # display table
         print(tabulate(table, headers=col_names))
-        print("\n",gene_lst)
-
-    def get_sequence(self, gene, file):
-        # record_gb = ge.parse_genbank(file)
-        # features_list = record_gb.features
-
-        # for i in range(len(features_list)) :
-        #     f = features_list[i]
-        #     if f.type == 'CDS':
-        #         gene_name = f.qualifiers["gene"][0]
-        #         if gene_name != gene:
-        #             continue
-
-        #         if 'transl_table' in f.qualifiers.keys():
-        #             transl_table = f.qualifiers['transl_table'][0]
-        #         else:
-        #             transl_table = "Standard"
-        #         if 'product' in f.qualifiers.keys():
-        #             gene_role = f.qualifiers['product'][0]
-        #         gene_Id = f.id
-        #         start_s = f.location.start.position
-        #         end_s = f.location.end.position
-        #         gene_seq = record_gb.seq[start_s:end_s]
-        #         pattern = r'[^ACGTacgt]' # pattern of non-nucleotide
-        #         test_string = str(gene_seq)
-        #         result = re.search(pattern, test_string)
-        #         if result !=None:
-        #             continue
-        #         return Seq(gene_seq), transl_table, gene_role, gene_Id
-        # return None
-        
-
-                
-
-
-        # Open the GenBank file
-        with open(file, "r") as handle:
-            # Iterate through the records in the file
-            for record in SeqIO.parse(handle, "genbank"):
-                # Check if the gene name of the feature matches the desired gene
-                for feature in record.features:
-                    if feature.type == "CDS" and "gene" in feature.qualifiers:
-                        gene_name = feature.qualifiers["gene"][0]
-                        if gene_name == gene:
-                            # Extract the sequence of the gene
-                            transl_table = feature.qualifiers.get(
-                                "transl_table", "Standard")
-                            gene_role = feature.qualifiers.get("product")[0]
-                            gene_Id = feature.qualifiers.get("protein_id")[0]
-                            gene_seq = feature.extract(record.seq)
-                            pattern = r'[^ACGTacgt]' # pattern of non-nucleotide
-                            test_string = str(gene_seq)
-                            result = re.search(pattern, test_string)
-                            if result !=None:
-                                continue
-                            return Seq(gene_seq), transl_table, gene_role, gene_Id
-
-        return None,None,None,None
+        print("\n", gene_lst)
 
     def trans_and_align(self, seq1, seq2, t1, t2):
 
         aligner = Align.PairwiseAligner()
         aligner.substitution_matrix = substitution_matrices.load("BLOSUM62")
 
-        messenger_rna1 = seq1.translate(t1)
-        messenger_rna2 = seq2.translate(t2)
+        messenger_rna1 = Seq(seq1).translate(t1)
+        messenger_rna2 = Seq(seq2).translate(t2)
 
         alignments = aligner.align(messenger_rna1, messenger_rna2)
-        print("seq: ",seq1, "\n")
-        print("trans : ",messenger_rna1,"\n")
-        print("ali: ", alignments[0][0][:-1],"\n")
-
-
         return self.calc_by_codons(seq1, alignments[0][0][:-1]), self.calc_by_codons(seq2, alignments[0][1][:-1])
 
     def calc_by_codons(self, seq, trans_seq):
@@ -232,26 +174,33 @@ class Virus_Analyzer:
                 ind += 3
         return new_seq
 
+    def validate_Seq(self, seq):
+
+        pattern = r'[^ACGTacgt]'  # pattern of non-nucleotide
+        test_string = str(seq)
+        result = re.search(pattern, test_string)
+        if result != None:
+            return None
+        return "true"
+
 
 if __name__ == "__main__":
 
-    va = Virus_Analyzer()
-
-    # Q1:
-
+    # "Data\BS168.gb"
     # Q2:
     covid_2021 = 'Data\MZ383039.1.gb'  # corona virus from 2021
     covid_2022 = 'Data\OQ065689.1.gb'  # corona virus from 2022
+    va = Virus_Analyzer(covid_2021, covid_2022)
 
     # Q1
     print("\nQ1:\n")
     va.calc_synonymous()
     # Q2_a
     print("\nQ2 - A:\n")
-    va.compare_gb_files([covid_2021, covid_2022])
+    va.compare_gb_files()
     # Q2_b
     print("Q2 - B:\n")
     va.compare_genes()
     # Q2_c
     print("Q2 - C:\n")
-    va.common_genes_analysis(covid_2021, covid_2022)
+    va.common_genes_analysis()
