@@ -62,6 +62,7 @@ def parse_genbank(gb_path):
 
 def create_dataframe_from_gb(gb_path, id_header='locus_tag'):
     record_gb = parse_genbank(gb_path)
+    sequence = record_gb.seq.upper()  # full genome
     genes_id, start, end, feat_types, strand, cell_wall = [], [], [], [], [], []
     tables, translations, codon_starts = [], [], []  # only for cds
     gene_names = []
@@ -109,8 +110,6 @@ def create_dataframe_from_gb(gb_path, id_header='locus_tag'):
     df = pd.DataFrame(zip(genes_id, start, end, strand, feat_types, tables, translations, codon_starts, cell_wall),
                       columns=['id', 'start', 'end', 'strand', 'type', 'table', 'translation', 'codon_start',
                                'cell wall'])
-
-    sequence = record_gb.seq.upper()  # full genome
     df['sub sequence'] = df.apply(lambda row: sequence[row['start']:row['end']], axis=1)
     df['check'] = df.apply(
         lambda row: check_translation(row['type'], row['translation'], row['sub sequence'], row['table'], row['strand'],
