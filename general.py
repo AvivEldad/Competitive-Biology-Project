@@ -63,7 +63,7 @@ def parse_genbank(gb_path):
 def create_dataframe_from_gb(gb_path, id_header='locus_tag'):
     record_gb = parse_genbank(gb_path)
     sequence = record_gb.seq.upper()  # full genome
-    genes_id, start, end, feat_types, strand, cell_wall = [], [], [], [], [], []
+    genes_id, start, end, feat_types, strand, cell_wall, products, proteins_id = [], [], [], [], [], [], [], []
     tables, translations, codon_starts = [], [], []  # only for cds
     gene_names = []
     features = record_gb.features[1:]
@@ -91,11 +91,21 @@ def create_dataframe_from_gb(gb_path, id_header='locus_tag'):
             if 'product' in feature.qualifiers.keys():
                 if 'cell wall' in feature.qualifiers['product'][0]:
                     cw = 'Yes'
+                product = feature.qualifiers['product'][0]
+            else:
+                product = None
+
+            if 'protein_id' in feature.qualifiers.keys():
+                protein_id = feature.qualifiers['protein_id'][0]
+            else:
+                protein_id = None
 
         else:
             table = None
             translation = None
             codon_start = None
+            product = None
+            protein_id = None
 
         genes_id.append(g_name)
         feat_types.append(feature.type)
@@ -106,10 +116,15 @@ def create_dataframe_from_gb(gb_path, id_header='locus_tag'):
         tables.append(table)
         translations.append(translation)
         codon_starts.append(codon_start)
+        products.append(product)
+        proteins_id.append(protein_id)
 
-    df = pd.DataFrame(zip(genes_id, start, end, strand, feat_types, tables, translations, codon_starts, cell_wall),
-                      columns=['id', 'start', 'end', 'strand', 'type', 'table', 'translation', 'codon_start',
-                               'cell wall'])
+    df = pd.DataFrame(
+        zip(genes_id, start, end, strand, feat_types, tables, translations, codon_starts, cell_wall, products,
+            proteins_id),
+        columns=['id', 'start', 'end', 'strand', 'type', 'table', 'translation', 'codon_start',
+                 'cell wall', 'product', 'protein id'])
+
     df['sub sequence'] = df.apply(lambda row: sequence[row['start']:row['end']], axis=1)
     df['check'] = df.apply(
         lambda row: check_translation(row['type'], row['translation'], row['sub sequence'], row['table'], row['strand'],

@@ -15,7 +15,7 @@ class UniProt:
         self.uniprot_file = pd.read_csv(uniport_path)
         self.trans_df = None
 
-    def prepre_data(self, names):
+    def prepare_data(self, names):
         prepared = []
         nan_count = 0
         for name in names:
@@ -31,11 +31,11 @@ class UniProt:
     def plot_pie_charts(self, total, nan_values, unique_genes, name):
         if nan_values == 0:
             y = np.array([total, unique_genes])
-            my_labels = ["total", "not in {}".format('Uniprot' if name == 'GeneBank' else 'GeneBank')]
+            my_labels = ["total", "not in {}".format('UniProt' if name == 'GeneBank' else 'GeneBank')]
             exp = [0.05, 0.3]
         else:
             y = np.array([total, nan_values, unique_genes])
-            my_labels = ["total", "non-values", "not in {}".format('Uniprot' if name == 'GeneBank' else 'GeneBank')]
+            my_labels = ["total", "non-values", "not in {}".format('UniProt' if name == 'GeneBank' else 'GeneBank')]
             exp = [0.05, 0.01, 0.3]
 
         plt.pie(y, labels=my_labels, explode=exp, shadow=True, autopct='%1.2f%%')
@@ -47,9 +47,9 @@ class UniProt:
         gb = self.genbank_file[self.genbank_file['type'] == 'CDS']
         gb_names = np.asarray(gb['id'])
 
-        # prepre the data
-        uni_to_compare, uni_nan = self.prepre_data(uniprot_names)
-        gb_to_compare, gb_nan = self.prepre_data(gb_names)
+        # prepare the data
+        uni_to_compare, uni_nan = self.prepare_data(uniprot_names)
+        gb_to_compare, gb_nan = self.prepare_data(gb_names)
 
         in_uni = list(set(uni_to_compare).difference(gb_to_compare))
         in_gb = list(set(gb_to_compare).difference(uni_to_compare))
@@ -95,7 +95,7 @@ class UniProt:
             seq_percent.append(hydro_percent)
 
         ge.show_stat(seq_percent, "Hydrophobic Amino Percent in Transmembrane sequences")
-        ge.plot_hist("Hydrofobic amino acids", seq_percent, 'percent', 'count', 200, 4000)
+        ge.plot_hist("Hydrophobic amino acids", seq_percent, 'percent', 'count', 200, 4000)
         plt.show()
 
     def plot_subs_hist(self, at_percent_gb, intersection_seq_percent, complement_seq_percent):
@@ -130,12 +130,12 @@ class UniProt:
         gb = self.genbank_file[self.genbank_file['type'] == 'CDS']
         gb_names = np.asarray(gb['id'])
 
-        un_to_compare, uni_nan = gb_and_uni.prepre_data(trans_names)
-        gb_to_compare, gb_nan = gb_and_uni.prepre_data(gb_names)
+        un_to_compare, uni_nan = gb_and_uni.prepare_data(trans_names)
+        gb_to_compare, gb_nan = gb_and_uni.prepare_data(gb_names)
 
         at_percent_gb = np.asarray(gb['AT percent'])  # A team
 
-        mask = np.array([(id in un_to_compare) for id in gb_to_compare])
+        mask = np.array([(identify in un_to_compare) for identify in gb_to_compare])
 
         intersection = gb_names[mask]
         complement = gb_names[~mask]
@@ -164,9 +164,9 @@ if __name__ == "__main__":
     print('\033[92m' + '--- PartB | Q1 ---' + '\033[0m')
     gb_and_uni.compare_uni_and_gb()
 
-    print('\033[92m' + '\n--- PartB | Q2 ---' + '\033[0m')
+    print('\n\033[92m' + '--- PartB | Q2 ---' + '\033[0m')
     gb_and_uni.trans_operations()  # a
     gb_and_uni.hydro_operations()  # b
 
-    print('\033[92m' + '\n--- PartB | Q3 ---' + '\033[0m')
+    print('\n\033[92m' + '--- PartB | Q3 ---' + '\033[0m')
     gb_and_uni.AT_distribution()
