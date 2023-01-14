@@ -51,10 +51,8 @@ class VirusAnalyzer:
 
     # Q2_a
     def compare_gb_files(self):
-        all_gene_len_1 = len(self.cds_1) + \
-                         len(self.other_1) + len(self.gene_names_1)
-        all_gene_len_2 = len(self.cds_2) + \
-                         len(self.other_2) + len(self.gene_names_2)
+        all_gene_len_1 = len(self.other_1) + len(self.gene_names_1)
+        all_gene_len_2 = len(self.other_2) + len(self.gene_names_2)
 
         format_massage = '{}\n=============\nGenes Number: {}\nProteins Number: {}\n'
         print(format_massage.format(self.file_id_1, all_gene_len_1, len(self.cds_1)))
